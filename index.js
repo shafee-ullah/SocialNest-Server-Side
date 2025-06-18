@@ -23,6 +23,7 @@ app.use(requestLogger);
 app.use(
   cors({
     origin: "*",
+    // origin: "http://localhost:5177", 
     methods: ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept"],
     credentials: false,
@@ -345,7 +346,7 @@ async function run() {
       }
     });
 
-    app.get("/events/joined", authenticate, async (req, res) => {
+    app.get("/joined/events", authenticate, async (req, res) => {
       try {
         const joinedEvents = await joinedEventsCollection
           .find({ userEmail: req.user.email })
@@ -364,6 +365,58 @@ async function run() {
         res.status(500).json({ error: "Server error" });
       }
     });
+
+    // app.get("/events/joined", authenticate, async (req, res) => {
+    //   try {
+    //     // Get all joined events for the user
+    //     const joinedEvents = await joinedEventsCollection
+    //       .find({ userEmail: req.user.email })
+    //       .sort({ joinedAt: -1 })
+    //       .toArray();
+    
+    //     // Convert eventIds to ObjectId
+    //     const eventIds = joinedEvents.map((join) => {
+    //       try {
+    //         return new ObjectId(join.eventId);
+    //       } catch (error) {
+    //         console.error("Invalid ObjectId:", join.eventId);
+    //         return null;
+    //       }
+    //     }).filter(id => id !== null);
+    
+    //     if (eventIds.length === 0) {
+    //       return res.json([]);
+    //     }
+    
+    //     // Get the events
+    //     const events = await eventsCollection
+    //       .find({ _id: { $in: eventIds } })
+    //       .sort({ eventDate: 1 })
+    //       .toArray();
+    
+    //     // Enrich events with participant data
+    //     const enrichedEvents = await Promise.all(
+    //       events.map(async (event) => {
+    //         const participants = await joinedEventsCollection
+    //           .find({ eventId: event._id })
+    //           .project({ _id: 0, userEmail: 1, userName: 1, userPhotoURL: 1 })
+    //           .toArray();
+    
+    //         return {
+    //           ...event,
+    //           participants,
+    //           participantsCount: participants.length,
+    //           isJoined: true
+    //         };
+    //       })
+    //     );
+    
+    //     res.json(enrichedEvents);
+    //   } catch (error) {
+    //     console.error("Get Joined Events Error:", error);
+    //     res.status(500).json({ error: "Server error" });
+    //   }
+    // }); 
 
     app.get("/manage/events", authenticate, async (req, res) => {
       try {

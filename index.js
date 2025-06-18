@@ -244,6 +244,7 @@ async function run() {
         });
 
         // Automatically add creator to joined events
+
         const joinData = {
           eventId: insertedEvent._id,
           userEmail: req.user.email,
@@ -320,7 +321,7 @@ async function run() {
           return res.status(404).json({ error: "Event not found" });
         }
 
-        // Check if already joined
+        // Check if user already joined
         const existingJoin = await joinedEventsCollection.findOne({
           eventId: new ObjectId(eventId),
           userEmail: req.user.email,

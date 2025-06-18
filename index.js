@@ -23,7 +23,7 @@ app.use(requestLogger);
 app.use(
   cors({
     origin: "*",
-    // origin: "http://localhost:5177", 
+    
     methods: ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept"],
     credentials: false,
@@ -327,7 +327,7 @@ async function run() {
         });
 
         if (existingJoin) {
-          return res.status(400).json({ error: "Already joined this event" });
+          return res.status(406).json({ error: "Already joined this event" });
         }
 
         const joinData = {

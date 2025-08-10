@@ -23,7 +23,6 @@ app.use(requestLogger);
 app.use(
   cors({
     origin: "*",
-    
     methods: ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept"],
     credentials: false,
@@ -159,20 +158,19 @@ async function run() {
           .sort({ eventDate: 1 })
           .toArray();
 
-
         const enrichedEvents = await Promise.all(
-            events.map(async (event) => {
-              const participants = await joinedEventsCollection
-                  .find({ eventId: event._id })
-                  .project({ _id: 0, userEmail: 1, userName: 1, userPhotoURL: 1 })
-                  .toArray();
+          events.map(async (event) => {
+            const participants = await joinedEventsCollection
+              .find({ eventId: event._id })
+              .project({ _id: 0, userEmail: 1, userName: 1, userPhotoURL: 1 })
+              .toArray();
 
-              return {
-                ...event,
-                participants,                  // full participant data
-                participantsCount: participants.length,  // count only (optional)
-              };
-            })
+            return {
+              ...event,
+              participants, // full participant data
+              participantsCount: participants.length, // count only (optional)
+            };
+          })
         );
 
         res.json(enrichedEvents);
@@ -195,9 +193,9 @@ async function run() {
 
         // Get joined participants
         const participants = await joinedEventsCollection
-            .find({ eventId: eventId })
-            .project({ _id: 0, userEmail: 1, userName: 1, userPhotoURL: 1, joinedAt: 1 })
-            .toArray();
+          .find({ eventId: eventId })
+          .project({ _id: 0, userEmail: 1, userName: 1, userPhotoURL: 1, joinedAt: 1 })
+          .toArray();
 
         // Attach participants to the event object
         event.participants = participants;
@@ -427,24 +425,59 @@ async function run() {
           .toArray();
 
         const enrichedEvents = await Promise.all(
-            events.map(async (event) => {
-              const participants = await joinedEventsCollection
-                  .find({ eventId: event._id })
-                  .project({ _id: 0, userEmail: 1, userName: 1, userPhotoURL: 1 })
-                  .toArray();
+          events.map(async (event) => {
+            const participants = await joinedEventsCollection
+              .find({ eventId: event._id })
+              .project({ _id: 0, userEmail: 1, userName: 1, userPhotoURL: 1 })
+              .toArray();
 
-              return {
-                ...event,
-                participants,                  // full participant data
-                participantsCount: participants.length,  // count only (optional)
-              };
-            })
+            return {
+              ...event,
+              participants, // full participant data
+              participantsCount: participants.length, // count only (optional)
+            };
+          })
         );
 
         res.json(enrichedEvents);
       } catch (error) {
         console.error("Get Managed Events Error:", error);
         res.status(500).json({ error: "Server error" });
+      }
+    });
+
+    app.delete("/events/:id", authenticate, async (req, res) => {
+      try {
+        const eventId = req.params.id;
+
+        // Find the event first to verify ownership
+        const event = await eventsCollection.findOne({
+          _id: new ObjectId(eventId),
+        });
+
+        if (!event) {
+          return res.status(404).json({ error: "Event not found" });
+        }
+
+        // Check if the current user is the owner of the event
+        if (event.userEmail !== req.user.email) {
+          return res.status(403).json({
+            error: "Unauthorized - You can only delete your own events",
+          });
+        }
+
+        // Delete the event
+        await eventsCollection.deleteOne({ _id: new ObjectId(eventId) });
+
+        // Also delete all joined events for this event
+        await joinedEventsCollection.deleteMany({
+          eventId: new ObjectId(eventId),
+        });
+
+        res.json({ message: "Event deleted successfully" });
+      } catch (error) {
+        console.error("Delete Event Error:", error);
+        res.status(500).json({ error: "Failed to delete event" });
       }
     });
 
